@@ -2,29 +2,38 @@ node {
    def commit_id
    def image = 'mhnj7/events-external'
 
-   stage('Preparation') {
+   stage('clone') {
        deleteDir()
        sh "git clone 'https://github.com/mhnj7/events-external' ."
        sh "git rev-parse --short HEAD > .git/commit-id"                        
        commit_id = readFile('.git/commit-id').trim()
    }
-   stage('test') {
-     nodejs(nodeJSInstallationName: 'nodejs') {
-       sh 'npm install'
-       sh 'npm test'
-       junit 'report.xml'
-     }
+   
+   try {
+         stage('test') {
+            nodejs(nodeJSInstallationName: 'nodejs') {
+               sh 'npm install'
+               sh 'npm test'
+            }
+         }
+   } catch (e) {
+        throw e
+   } finally {
+      junit 'report.xml'
    }
+
    stage('sonar-scanner') {
        def sonarqubeScannerHome = tool name: 'sonar', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
        withCredentials([string(credentialsId: 'sonarid', variable: 'sonarLogin')]) {
            sh "${sonarqubeScannerHome}/bin/sonar-scanner -e -Dsonar.host.url=http://sonarqube:9000 -Dsonar.login=${sonarLogin} -Dsonar.projectKey=events-external"
        }
     }
+   
    stage('docker build/push') {
      docker.withRegistry('https://index.docker.io/v1/', 'dockerhubid') {
        def app1 = docker.build(image + ":${BUILD_NUMBER}.${commit_id}", '.').push()
        def app2 = docker.build(image + ":latest", '.').push()
      }
    }
+   
 }
