@@ -39,10 +39,6 @@ node {
       }
    }
    
-   stage('gcr build/push') {
-      sh "gcloud builds submit --tag ${gcrimage} ."
-   }
-   
    stage('docker build/push') {
      docker.withRegistry('https://index.docker.io/v1/', 'dockerhubid') {
         image1 = image + ":${BUILD_NUMBER}.${commit_id}"
@@ -53,7 +49,7 @@ node {
    }
    
    stage('deploy') {
-      sh "sed 's/image:.*/image: ${image1}/' kubernetes/deployment.yaml"
+      sh "sed -i 's/image:.*/image: ${image1}/' kubernetes/deployment.yaml"
       sh "gcloud container clusters get-credentials devops-demo-cluster --zone us-east4-c --project events-demo-308800"
       sh "kubectl delete -f kubernetes"
       sh "kubectl apply -f kubernetes"
