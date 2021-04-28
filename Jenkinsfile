@@ -1,6 +1,7 @@
 node {
    def commit_id
    def image = 'mhnj7/events-external'
+   def gcrimage = 'gcr.io/events-demo-308800/events-external:latest'
    def image1
    def image2
 
@@ -38,12 +39,16 @@ node {
       }
    }
    
+   stage('gcr build/push') {
+      sh "gcloud builds submit --tag ${gcrimage} ."
+   }
+   
    stage('docker build/push') {
      docker.withRegistry('https://index.docker.io/v1/', 'dockerhubid') {
         image1 = image + ":${BUILD_NUMBER}.${commit_id}"
         image2 = image + ":latest"
-        def app1 = docker.build(image + ":${BUILD_NUMBER}.${commit_id}", '.').push()
-        def app2 = docker.build(image + ":latest", '.').push()
+        def app1 = docker.build(image1, '.').push()
+        def app2 = docker.build(image2, '.').push()
      }
    }
    
