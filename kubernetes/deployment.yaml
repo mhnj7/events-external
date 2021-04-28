@@ -16,7 +16,7 @@ spec:
         app: events-external
     spec:
       containers:
-      - image: mhnj7/events-external:latest
+      - image: gcr.io/events-demo-308800/events-external:latest
         name: events-external
         imagePullPolicy: "Always"
         env:
