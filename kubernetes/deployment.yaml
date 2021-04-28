@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: events-external
+        build_number: ${BUILD_NUMBER}
     spec:
       containers:
       - image: gcr.io/events-demo-308800/events-external:latest
