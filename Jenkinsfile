@@ -1,6 +1,8 @@
 node {
    def commit_id
    def image = 'mhnj7/events-external'
+   def image1
+   def image2
 
    stage('clone') {
        deleteDir()
@@ -10,30 +12,48 @@ node {
    }
    
    try {
-         stage('test') {
-            nodejs(nodeJSInstallationName: 'nodejs') {
-               sh 'npm install'
-               sh 'npm test'
-            }
-         }
+      stage('test') {
+         sh 'npm install'
+         sh 'npm test'
+      }
    } catch (e) {
-        throw e
+      throw e
    } finally {
       junit 'report.xml'
    }
-
+   
    stage('sonar-scanner') {
        def sonarqubeScannerHome = tool name: 'sonar', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
-       withCredentials([string(credentialsId: 'sonarid', variable: 'sonarLogin')]) {
-           sh "${sonarqubeScannerHome}/bin/sonar-scanner -e -Dsonar.host.url=http://sonarqube:9000 -Dsonar.login=${sonarLogin} -Dsonar.projectKey=events-external"
+       withSonarQubeEnv() {
+           sh "${sonarqubeScannerHome}/bin/sonar-scanner -Dsonar.projectKey=events-external"
        }
     }
    
+   stage('quality gate'){
+      timeout(5) { // Just in case something goes wrong, pipeline will be killed after a timeout
+         def qg = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
+         if (qg.status != 'OK') {
+            error "Pipeline aborted due to quality gate failure: ${qg.status}"
+         }
+      }
+   }
+   
    stage('docker build/push') {
      docker.withRegistry('https://index.docker.io/v1/', 'dockerhubid') {
-       def app1 = docker.build(image + ":${BUILD_NUMBER}.${commit_id}", '.').push()
-       def app2 = docker.build(image + ":latest", '.').push()
+        image1 = image + ":${BUILD_NUMBER}.${commit_id}"
+        image2 = image + ":latest"
+        def app1 = docker.build(image + ":${BUILD_NUMBER}.${commit_id}", '.').push()
+        def app2 = docker.build(image + ":latest", '.').push()
      }
+   }
+   
+   stage('deploy') {
+      sh "gcloud container clusters get-credentials devops-demo-cluster --zone us-east4-c --project events-demo-308800"
+      sh "kubectl apply -f kubernetes"
+   }
+   
+   stage('cleanup') {
+      sh "docker rmi ${image1} ${image2}"
    }
    
 }
