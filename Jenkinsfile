@@ -1,7 +1,6 @@
 node {
    def commit_id
    def image = 'mhnj7/events-external'
-   def gcrimage = 'gcr.io/events-demo-308800/events-external:latest'
    def image1
    def image2
 
