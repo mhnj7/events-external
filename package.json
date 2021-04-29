@@ -5,8 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "SERVER=http://localhost:8082 node server.js",
-    "test": "SERVER=http://localhost:8082 JUNIT_REPORT_PATH=./report.xml nyc mocha --colors --reporter mocha-jenkins-reporter --exit",
-    "coverage": "nyc --reporter=lcov mocha -R @danmasta/mocha-sonar ./test/*.js"
+    "test": "SERVER=http://localhost:8082 JUNIT_REPORT_PATH=./report.xml nyc --reporter=lcov mocha --colors --reporter mocha-jenkins-reporter --exit"
   },
   "keywords": [],
   "author": "",
@@ -17,8 +16,7 @@
     "nock": "^10.0.6",
     "nyc": "^14.1.1",
     "supertest": "^4.0.2",
-    "mocha-jenkins-reporter": "0.4.5",
-    "mocha-sonar": "^1.0.1"
+    "mocha-jenkins-reporter": "0.4.5"
   },
   "dependencies": {
     "body-parser": "^1.19.0",
